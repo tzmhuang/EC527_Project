@@ -33,5 +33,8 @@ Final write-up submitted (incorporating feed-back from presentations)
 
 
 ## Files  
+`child.obj` : Mesh file for a small child (~5K vertices).
 
 `obj_to_adjmatrix.c` : Imports the obj file and builds the adjacency matrix (with 6 additional rows and columns for keypoints); values represent distances along edges to adjacent vertices (-1 means no edge exists).
+
+`pyramid.obj` : Simple mesh file for a tetrahedron (4 total vertices) for development and testing.
