@@ -74,16 +74,16 @@ void getKVDistance(data_t* kp_array, data_t* v_array, int N_kp, int N_v, data_t*
     data_t d, kp_x, kp_y, kp_z, gp_x, gp_y, gp_z;
     data_t* data = (data_t *) calloc(N_kp*N_v, sizeof(data_t));
 
-    for (int i=0; i<N_kp; i++){
-        kp_x = kp_array[i*DIM];
-        kp_y = kp_array[i*DIM+1];
-        kp_z = kp_array[i*DIM+2];
+    for (int i=0; i<N_v; i++){
+        kp_x = v_array[i*DIM];
+        kp_y = v_array[i*DIM+1];
+        kp_z = v_array[i*DIM+2];
         
-        for (int j=0; j<N_v; j++){
-            gp_x = v_array[j*DIM];
-            gp_y = v_array[j*DIM+1];
-            gp_z = v_array[j*DIM+2];
-            data[i*N_v + j] = (kp_x-gp_x)*(kp_x-gp_x) + (kp_y-gp_y)*(kp_y-gp_y) + (kp_z-gp_z)*(kp_z-gp_z);
+        for (int j=0; j<N_kp; j++){
+            gp_x = kp_array[j*DIM];
+            gp_y = kp_array[j*DIM+1];
+            gp_z = kp_array[j*DIM+2];
+            data[i*N_kp + j] = (kp_x-gp_x)*(kp_x-gp_x) + (kp_y-gp_y)*(kp_y-gp_y) + (kp_z-gp_z)*(kp_z-gp_z);
         }
     }
     *res = data;
@@ -185,18 +185,42 @@ int main() {
   }
   fclose(fp);
 
+  // Calculate Keypoint-vertex distance
   data_t* kv_distances;
   getKVDistance(keypoints, verts, Kp, Ve, &kv_distances);
 
-  printf("\nKeyppoint-Vertex Distances:\n");
-  for(int i=0; i<Kp; i++){
-    printf("Kp %d: ", i);
-      for(int j=0; j<Ve; j++){
-          printf("%f ",kv_distances[i*(Ve) + j]);
+  printf("\nKeypoint-Vertex Distances:\n");
+  for(int i=0; i<Ve; i++){
+    printf("Vt %d: ", i);
+      for(int j=0; j<Kp; j++){
+          printf("%f ",kv_distances[i*(Kp) + j]);
       }
       printf("\n");
   }
+  
+  //find closest 1 kp for all vertices
 
+  int min_id;
+  data_t min_d, d;
+  int* nearest_kp = (int*) malloc(Ve * sizeof(int));
+  for(int i=0; i<Ve; i++){
+    min_id = -1;
+    min_d = 99999;
+    for(int j=0; j<Kp; j++){
+      d = kv_distances[i*(Kp) + j];
+      if(min_d > d){
+        min_id = j;
+        min_d = d;
+      }
+    }
+    nearest_kp[i] = min_id;
+  }
+  
+  printf("\nClosest KP id:\n");
+  for(int i=0; i<Ve; i++){
+    printf("Vt %d: ", i);
+    printf("%d \n",nearest_kp[i]);
+  }
 
 
   // Clean-up
