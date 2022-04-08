@@ -48,6 +48,47 @@ void printAdjMatrix(data_t *adjMat, int Ve) {
   }
 }
 
+void loadKeypoints(FILE* fptr, data_t** point_array, int** type_array, int* Kp){
+    int N;
+    data_t n;
+    if (NULL == fptr) printf("file cannot be opened \n");
+    if (!fscanf(fptr, "%d ", &N)){ printf("Error!"); return;}
+    
+    data_t* data = (data_t *) calloc(N*3, sizeof(data_t));
+    int* type = (int *) calloc(N, sizeof(int));
+    int k=0;
+    for (int i=0; i<N; i++){
+      if(!fscanf(fptr, "%d %f %f %f", &type[i], &data[k], &data[k+1], &data[k+2])){ 
+        printf("Error!"); 
+        return;
+      }
+      k+=3;
+    }
+    *Kp = N;
+    *point_array = data;
+    *type_array = type;
+}
+
+void getKVDistance(data_t* kp_array, data_t* v_array, int N_kp, int N_v, data_t** res){
+    int DIM = 3;
+    data_t d, kp_x, kp_y, kp_z, gp_x, gp_y, gp_z;
+    data_t* data = (data_t *) calloc(N_kp*N_v, sizeof(data_t));
+
+    for (int i=0; i<N_kp; i++){
+        kp_x = kp_array[i*DIM];
+        kp_y = kp_array[i*DIM+1];
+        kp_z = kp_array[i*DIM+2];
+        
+        for (int j=0; j<N_v; j++){
+            gp_x = v_array[j*DIM];
+            gp_y = v_array[j*DIM+1];
+            gp_z = v_array[j*DIM+2];
+            data[i*N_v + j] = (kp_x-gp_x)*(kp_x-gp_x) + (kp_y-gp_y)*(kp_y-gp_y) + (kp_z-gp_z)*(kp_z-gp_z);
+        }
+    }
+    *res = data;
+}
+
 int main() {
   FILE * fp;
   char * line = NULL;
@@ -119,7 +160,6 @@ int main() {
     printf("%d: %d, %d, %d\n", i, faces[k], faces[k+1], faces[k+2]);
     k+=3;
   }
-
   // Add edges to adjacency matrix
   k = 0;
   for (int i=0; i<F; i++) {
@@ -130,10 +170,42 @@ int main() {
   // Print adjacency matrix
   printAdjMatrix(adjMat, VeKp);
 
+
+  // Load Keypoints
+  data_t* keypoints;
+  int* keypoint_types;
+  int Kp;
+  fp = fopen("kp_example.txt", "r");
+  loadKeypoints(fp, &keypoints, &keypoint_types, &Kp);
+  printf("\nKeyppoints:\n");
+  k = 0;
+  for (int i=0; i<Kp; i++){
+    printf("%d [type %d]: %f, %f, %f \n", i, keypoint_types[i], keypoints[k], keypoints[k+1], keypoints[k+2]);
+    k+=3;
+  }
+  fclose(fp);
+
+  data_t* kv_distances;
+  getKVDistance(keypoints, verts, Kp, Ve, &kv_distances);
+
+  printf("\nKeyppoint-Vertex Distances:\n");
+  for(int i=0; i<Kp; i++){
+    printf("Kp %d: ", i);
+      for(int j=0; j<Ve; j++){
+          printf("%f ",kv_distances[i*(Ve) + j]);
+      }
+      printf("\n");
+  }
+
+
+
   // Clean-up
   free(verts);
   free(adjMat);
   free(faces);
+  free(keypoints);
+  free(kv_distances);
+  free(keypoint_types);
 
   return 0;
 }
