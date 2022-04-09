@@ -1,6 +1,10 @@
+// gcc -O1 obj_to_adjmatrix.c -lrt -std=c99 -o obj_to_adjmatrix
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
 
 typedef float data_t;
 
@@ -9,10 +13,13 @@ typedef float data_t;
 // Calculate distance between f1,f2 then f1,f3 then f2,f3
 // Store each calculated distance in adjacency matrix in positions [f1,f2],[f2,f1] then [f1,f3],[f3,f1] then [f2,f3],[f3,f2]
 void addEdge(data_t *verts, data_t *adjMat, int f1, int f2, int f3, int Ve) {
+
   data_t d;
   int f1v = (f1-1)*3;
   int f2v = (f2-1)*3;
   int f3v = (f3-1)*3;
+
+  // f1vX, f1vY and f1vZ represent the three locations of the given point face1
   data_t f1vX = verts[f1v], f1vY = verts[f1v+1], f1vZ = verts[f1v+2];
   data_t f2vX = verts[f2v], f2vY = verts[f2v+1], f2vZ = verts[f2v+2];
   data_t f3vX = verts[f3v], f3vY = verts[f3v+1], f3vZ = verts[f3v+2];
@@ -52,6 +59,8 @@ void loadKeypoints(FILE* fptr, data_t** point_array, int** type_array, int* Kp){
     int N;
     data_t n;
     if (NULL == fptr) printf("file cannot be opened \n");
+    // N represent the whole key-point numbers
+    // type_array represent the type, point_array represent the data points
     if (!fscanf(fptr, "%d ", &N)){ printf("Error!"); return;}
     
     data_t* data = (data_t *) calloc(N*3, sizeof(data_t));
@@ -83,17 +92,77 @@ void getKVDistance(data_t* kp_array, data_t* v_array, int N_kp, int N_v, data_t*
             gp_x = kp_array[j*DIM];
             gp_y = kp_array[j*DIM+1];
             gp_z = kp_array[j*DIM+2];
+            // return the smallest distance between kp and v
             data[i*N_kp + j] = (kp_x-gp_x)*(kp_x-gp_x) + (kp_y-gp_y)*(kp_y-gp_y) + (kp_z-gp_z)*(kp_z-gp_z);
         }
     }
     *res = data;
 }
 
+void addEdge_key(data_t *verts, data_t *keypoints,data_t *adjMat, int Ve, int Kp){
+  int i, j;
+  data_t d;
+
+  printf("\n Edge: \n");
+  printf("\nVe is %d and Kp is %d\n", Ve, Kp);
+
+  // Ve = 4, Kp = 6
+  for(i = 0; i < Ve; i++){
+
+    data_t v1vX = verts[i], v1vY = verts[i+1], v1vZ = verts[i+2];
+
+    for( j = 0; j < Kp; j++){
+
+      data_t ky1vX = keypoints[j], ky1vY = keypoints[j+1], ky1vZ = keypoints[j+2];
+
+      d =  pow((v1vX - ky1vX),2) + pow((v1vY - ky1vY),2) + pow((v1vZ - ky1vZ),2);
+      adjMat[i * (Ve + Kp) + (j + Ve)] = d;
+      adjMat[(j + Ve) * (Ve + Kp) + i] = d;
+    }
+  }
+
+}
+
+
+float Dijkstra(int kp_index, int v_index, data_t *adjMat, int VeKp, int Ve){
+    int i, j;
+    int size = VeKp;
+    float dis[size];  	//calculate the dis 
+    int visit[size];  // record whether it is visited
+    int kp_adj = kp_index + Ve;
+
+    for(i = 1 ; i < size ; i++){	
+      visit[i] = 0;	
+      dis[i] = adjMat[v_index*size + i];
+    }  
+
+    for(i = 1; i < size; i++){
+      int min = 1000000;
+      int pos;
+
+      for(j = 1; j < size; j++){
+        if(!visit[j] && min > dis[j]){
+          pos = j;
+          min = dis[j];
+        }
+      }
+      visit[pos] = 1;
+
+      for(j = 1 ; j < size ; j++){
+        if(!visit[j] && (dis[j] > (dis[pos] +adjMat[pos*size + j]))){ 
+          dis[j] = dis[pos] + adjMat[pos*size + j];	
+        } 
+      } 
+    }
+
+    return dis[kp_adj];
+}
+
 int main() {
   FILE * fp;
   char * line = NULL;
   size_t len = 0;
-  ssize_t read;
+  size_t read;
   int Ve = 0, VeKp = 0, F = 0, j = 0, k = 0, ret;
   char discard;
 
@@ -123,7 +192,7 @@ int main() {
 
   // Initialize the matrices to zero or -1
   for (int i = 0; i< Ve*3; i++) verts[i]=0.0;
-  for (int i = 0; i< VeKp*VeKp; i++) adjMat[i]=-1.0;
+  for (int i = 0; i< VeKp*VeKp; i++) adjMat[i]=1000000;
   for (int i = 0; i< F*3; i++) faces[i]=0;
 
   // Rewind file to beginning and read in all lines again, this time into the allocated matrices
@@ -167,9 +236,6 @@ int main() {
     k+=3;
   }
 
-  // Print adjacency matrix
-  printAdjMatrix(adjMat, VeKp);
-
 
   // Load Keypoints
   data_t* keypoints;
@@ -184,6 +250,11 @@ int main() {
     k+=3;
   }
   fclose(fp);
+
+  addEdge_key(verts, keypoints, adjMat, Ve, Kp);
+
+    // Print adjacency matrix
+  printAdjMatrix(adjMat, VeKp);
 
   // Calculate Keypoint-vertex distance
   data_t* kv_distances;
@@ -221,6 +292,16 @@ int main() {
     printf("Vt %d: ", i);
     printf("%d \n",nearest_kp[i]);
   }
+
+  // find the shortest distance path between v and kp
+  // given 1 keypoint and 1 vertices, and calculate the shortest path between them
+  // input: kp, v, adj_matrix
+  int kp_index = 1;
+  int v_index = 1;
+  float shortest_dis = 0;
+  shortest_dis = Dijkstra(kp_index, v_index, adjMat, VeKp, Ve);
+  printf("\nThe shortest path between Vertices [%d] and Keypoint [%d] is %f\n", kp_index, v_index, shortest_dis);
+
 
 
   // Clean-up
