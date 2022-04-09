@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define NMINKP 3
 
 typedef float data_t;
 
@@ -269,28 +270,38 @@ int main() {
       printf("\n");
   }
   
-  //find closest 1 kp for all vertices
+  //find closest NMINKP kp for all vertices
+  int min_id, last_min_id;
 
-  int min_id;
-  data_t min_d, d;
-  int* nearest_kp = (int*) malloc(Ve * sizeof(int));
+  data_t min_d, d, last_min;
+  int* nearest_kp = (int*) malloc(Ve * NMINKP * sizeof(int));
+
+  // Ugly loops: looping through all vertix NMINKP times 
+  // Complexity: O(Ve*Kp*NMINKP)
   for(int i=0; i<Ve; i++){
-    min_id = -1;
-    min_d = 99999;
-    for(int j=0; j<Kp; j++){
-      d = kv_distances[i*(Kp) + j];
-      if(min_d > d){
-        min_id = j;
-        min_d = d;
+    last_min = -1;
+    for(int k=0; k<NMINKP; k++){
+      min_d = 99999;
+      min_id = -1;
+      for(int j=0; j<Kp; j++){
+        d = kv_distances[i*(Kp) + j];
+        if(min_d > d && last_min < d){
+          min_id = j;
+          min_d = d;
+        }
       }
+      nearest_kp[i*NMINKP + k] = min_id;
+      last_min = min_d;
     }
-    nearest_kp[i] = min_id;
   }
   
   printf("\nClosest KP id:\n");
   for(int i=0; i<Ve; i++){
     printf("Vt %d: ", i);
-    printf("%d \n",nearest_kp[i]);
+    for(int j=0; j<NMINKP; j++){
+      printf("%d ",nearest_kp[i*NMINKP + j]);
+    }
+    printf("\n");
   }
 
   // find the shortest distance path between v and kp
