@@ -35,10 +35,22 @@ Final write-up submitted (incorporating feed-back from presentations)
 ## Files  
 `child_cam_frame.obj` : Mesh file for a small child (~5K vertices).
 
-`child_keypoints.txt` : 6 keypoints for the small child mesh (in order: head, torso, right arm, left arm, right leg, left leg). 
+`child_keypoints.txt` : **Updated 4/11/22 to fix head and torso values** 6 keypoints for the small child mesh (in order: head, torso, right arm, left arm, right leg, left leg). 
+
+`mesh_keypoint_plot_v2.m` : Matlab script to import the child OBJ file and plot it along with the 6 keypoints (see animated example of the output below).
 
 `obj_to_adjlist.c` : Imports the obj file and builds the adjacency list with distance values; distance values represent distances along edges to adjacent vertices.
 
 ~~`obj_to_adjmatrix.c` : Imports the obj file and builds the adjacency matrix (with 6 additional rows and columns for keypoints); values represent distances along edges to adjacent vertices (-1 means no edge exists).~~
 
 `pyramid.obj` : Simple mesh file for a tetrahedron (4 total vertices) for development and testing.
+
+`readObj.m` : Matlab script to import OBJ files.
+
+
+## Visualizations
+
+### Child OBJ and Keypoints Plotted in Matlab (LOW QUALITY)
+Matlab exports cause the jumpiness in the animation.  
+
+![animated_mesh_kp_lowqual.gif](animated_mesh_kp_lowqual.gif)
