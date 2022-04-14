@@ -7,6 +7,8 @@
 #include <math.h>
 
 #define INT_MAX 1e+6
+#define NMINV 1
+
 
 typedef float data_t;
 
@@ -181,13 +183,13 @@ void PrintDistance(float dist[], int n)
 }
 
 
-void BellmanFord(struct Graph* graph, int index)
+void BellmanFord(struct Graph* graph, int index, data_t** ret_dist)
 {
     int V = graph->Ve;
     int to;
     struct AdjListNode *from = NULL;
     data_t weight;
-    float StoreDistance[V];
+    data_t StoreDistance[V];
     int i,j;
     int source = index - 1;
  
@@ -225,11 +227,53 @@ void BellmanFord(struct Graph* graph, int index)
         }
     }
  
-    PrintDistance(StoreDistance, V);
- 
+    *ret_dist = StoreDistance;
     return;
 }
 
+void loadKeypoints(FILE* fptr, data_t** point_array, int** type_array, int* Kp){
+    int N;
+    data_t n;
+    if (NULL == fptr) printf("file cannot be opened \n");
+    // N represent the whole key-point numbers
+    // type_array represent the type, point_array represent the data points
+    if (!fscanf(fptr, "%d ", &N)){ printf("Error!"); return;}
+    
+    data_t* data = (data_t *) calloc(N*3, sizeof(data_t));
+    int* type = (int *) calloc(N, sizeof(int));
+    int k=0;
+    for (int i=0; i<N; i++){
+      if(!fscanf(fptr, "%d %f %f %f", &type[i], &data[k], &data[k+1], &data[k+2])){ 
+        printf("Error!"); 
+        return;
+      }
+      k+=3;
+    }
+    *Kp = N;
+    *point_array = data;
+    *type_array = type;
+}
+
+void getKVDistance(data_t* kp_array, data_t* v_array, int N_kp, int N_v, data_t** res){
+    int DIM = 3;
+    data_t d, kp_x, kp_y, kp_z, gp_x, gp_y, gp_z;
+    data_t* data = (data_t *) calloc(N_kp*N_v, sizeof(data_t));
+
+    for (int i=0; i<N_kp; i++){
+        kp_x = kp_array[i*DIM];
+        kp_y = kp_array[i*DIM+1];
+        kp_z = kp_array[i*DIM+2];
+        
+        for (int j=0; j<N_v; j++){
+            gp_x = v_array[j*DIM];
+            gp_y = v_array[j*DIM+1];
+            gp_z = v_array[j*DIM+2];
+            // return the smallest distance between kp and v
+            data[i*N_v + j] = (kp_x-gp_x)*(kp_x-gp_x) + (kp_y-gp_y)*(kp_y-gp_y) + (kp_z-gp_z)*(kp_z-gp_z);
+        }
+    }
+    *res = data;
+}
 
 
 int main()
@@ -291,7 +335,23 @@ int main()
 
     int *matrix_edge = (int *)malloc(Ve * Ve * sizeof(int));           
 
-    struct Graph *graph = createGraph(Ve);
+
+
+    // Load Keypoints
+    data_t* keypoints;
+    int* keypoint_types;
+    int Kp;
+    fp = fopen("child_keypoints.txt", "r");
+    loadKeypoints(fp, &keypoints, &keypoint_types, &Kp);
+    printf("\nKeyppoints:\n");
+    k = 0;
+    for (int i=0; i<Kp; i++){
+        printf("%d [type %d]: %f, %f, %f \n", i, keypoint_types[i], keypoints[k], keypoints[k+1], keypoints[k+2]);
+        k+=3;
+    }
+
+    // Create Graph
+    struct Graph *graph = createGraph(Ve + Kp);
 
     // Close the file and clean-up a little
     fclose(fp);
@@ -318,7 +378,7 @@ int main()
 
 
 
-    // Add edges to adjacency matrix
+    // Add edges to adjacency list
     k = 0;
     for (int i = 0; i < F; i++)
     {
@@ -330,12 +390,79 @@ int main()
     printGraph(graph);
     printf("\n");
 
-    BellmanFord(graph, 1);
+
+
+    // Calculate Keypoint-vertex distance
+    data_t* kv_distances;
+    getKVDistance(keypoints, verts, Kp, Ve, &kv_distances);
+
+    printf("\nKeypoint-Vertex Distances:\n");
+    for(int i=0; i<Kp; i++){
+        printf("Kp %d: ", i);
+        for(int j=0; j<Ve; j++){
+            printf("%f ",kv_distances[i*(Ve) + j]);
+        }
+        printf("\n");
+    }
+
+
+    //find closest NMINV vertex for all keypoints
+    int min_id, last_min_id;
+
+    data_t min_d, d, last_min;
+    int* nearest_vt = (int*) malloc(Kp * NMINV * sizeof(int));
+
+    // Ugly loops: looping through all keypoint NMINV times 
+    // Complexity: O(Ve*Kp*NMINV)
+    for(int i=0; i<Kp; i++){
+        last_min = -1;
+        for(int k=0; k<NMINV; k++){
+            min_d = 99999;
+            min_id = -1;
+            for(int j=0; j<Ve; j++){
+                d = kv_distances[i*(Ve) + j];
+                if(min_d > d && last_min < d){
+                min_id = j;
+                min_d = d;
+                }
+            }
+            nearest_vt[i*NMINV + k] = min_id;
+            last_min = min_d;
+        }
+    }
+
+    printf("\nClosest vertex id:\n");
+    for(int i=0; i<Kp; i++){
+        printf("Kp %d: ", i);
+        for(int j=0; j<NMINV; j++){
+        printf("%d ",nearest_vt[i*NMINV + j]);
+        }
+        printf("\n");
+    }
+
+
+    // Link keypoints to NMINV vertices
+    for(int i=0; i<Kp; i++){
+        for(int j=0; j<NMINV; j++){
+            addEdge(graph, Ve+i, nearest_vt[i*NMINV+j], 0); //[Add edge here]
+        }
+    }
+
+
+
+    // // For each keypoint, run Bellman-Ford
+    // // Complexity: O(|E|*|K|*|V|)
+    // data_t* test_dist;
+    // BellmanFord(graph, 2, &test_dist); 
+    // PrintDistance(test_dist, Ve+Kp);
 
     // Clean-up
     free(verts);
     free(faces);
     free(graph);
+    free(keypoints);
+    free(kv_distances);
+    free(keypoint_types);
 
     return 0;
 }
