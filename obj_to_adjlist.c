@@ -1,4 +1,8 @@
-// gcc -O1 obj_to_adjlist.c -lrt -std=c99 -o obj_to_adjlist
+/*
+
+ gcc -O1 obj_to_adjlist.c -lrt -std=c99 -o obj_to_adjlist
+
+*/
 
 // Adjacency List code borrowed from https://www.geeksforgeeks.org/graph-and-its-representations/
 
@@ -183,13 +187,13 @@ void PrintDistance(float dist[], int n)
 }
 
 
-void BellmanFord(struct Graph* graph, int index, data_t** ret_dist)
+void BellmanFord(struct Graph* graph, int index)
 {
     int V = graph->Ve;
     int to;
     struct AdjListNode *from = NULL;
     data_t weight;
-    data_t StoreDistance[V];
+    float StoreDistance[V];
     int i,j;
     int source = index - 1;
  
@@ -200,34 +204,31 @@ void BellmanFord(struct Graph* graph, int index, data_t** ret_dist)
         StoreDistance[i] = INT_MAX;
  
     StoreDistance[source] = 0;
-
- 
+    
     from = graph->array[source].head;
-
     while(from != NULL){
         to = from->dest;
         weight = from->dist;
-        if(StoreDistance[to] > StoreDistance[source] + weight){
-            StoreDistance[to] = StoreDistance[source] + weight;
+        if(StoreDistance[to] > StoreDistance[i] + weight){
+            StoreDistance[to] = StoreDistance[i] + weight;
         }
         from = from->next;
     }
-
 
     for(int i = 0; i < V; i++){
         from = graph->array[i].head;
         while(from != NULL){
             to = from->dest;
             weight = from->dist;
-            if(StoreDistance[to] > StoreDistance[source] + weight){
-                // Update the shortest path distance
-                StoreDistance[to] = StoreDistance[source] + weight;
+            if(StoreDistance[to] > StoreDistance[i] + weight){
+                StoreDistance[to] = StoreDistance[i] + weight;
             }
             from = from->next;
         }
     }
+
+    PrintDistance(StoreDistance, V);
  
-    *ret_dist = StoreDistance;
     return;
 }
 
@@ -390,8 +391,6 @@ int main()
     printGraph(graph);
     printf("\n");
 
-
-
     // Calculate Keypoint-vertex distance
     data_t* kv_distances;
     getKVDistance(keypoints, verts, Kp, Ve, &kv_distances);
@@ -448,13 +447,20 @@ int main()
         }
     }
 
+    printGraph(graph);
+    printf("\n");
 
 
-    // // For each keypoint, run Bellman-Ford
-    // // Complexity: O(|E|*|K|*|V|)
+    BellmanFord(graph, 2); 
+
+
+    // For each keypoint, run Bellman-Ford
+    // Complexity: O(|E|*|K|*|V|)
     // data_t* test_dist;
     // BellmanFord(graph, 2, &test_dist); 
     // PrintDistance(test_dist, Ve+Kp);
+
+
 
     // Clean-up
     free(verts);
