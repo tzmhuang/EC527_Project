@@ -209,8 +209,8 @@ void BellmanFord(struct Graph* graph, int index)
     while(from != NULL){
         to = from->dest;
         weight = from->dist;
-        if(StoreDistance[to] > StoreDistance[i] + weight){
-            StoreDistance[to] = StoreDistance[i] + weight;
+        if(StoreDistance[to] > StoreDistance[source] + weight){
+            StoreDistance[to] = StoreDistance[source] + weight;
         }
         from = from->next;
     }
@@ -451,7 +451,7 @@ int main()
     printf("\n");
 
 
-    BellmanFord(graph, 2); 
+    BellmanFord(graph, 6); 
 
 
     // For each keypoint, run Bellman-Ford
