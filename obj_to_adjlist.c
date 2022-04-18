@@ -169,10 +169,10 @@ void addEdges(data_t *verts, struct Graph *graph, int f1, int f2, int f3)
     addEdge(graph, (f2 - 1), (f3 - 1), d);
 }
 
-void PrintDistance(float dist[], int n)
+void PrintDistance(float dist[], int n, int source)
 {
     // This function prints the final solution
-    printf("The result of the BellmanFord and a given vert is: ");
+    printf("The result of the BellmanFord and a given vert %d is: ", source);
     printf("\nVertex\tDistance from Source Vertex\n");
     int i;
 
