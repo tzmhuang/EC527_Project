@@ -169,7 +169,7 @@ void addEdges(data_t *verts, struct Graph *graph, int f1, int f2, int f3)
     addEdge(graph, (f2 - 1), (f3 - 1), d);
 }
 
-void PrintDistance(float dist[], int n, int source)
+void PrintDistance(data_t dist[], int n, int source)
 {
     // This function prints the final solution
     printf("The result of the BellmanFord and a given vert %d is: ", source);
@@ -182,13 +182,13 @@ void PrintDistance(float dist[], int n, int source)
     }
 }
 
-void BellmanFord(struct Graph *graph, int index)
+void BellmanFord(struct Graph *graph, int index, data_t** distance)
 {
     int V = graph->Ve;
     int to;
     struct AdjListNode *from = NULL;
     data_t weight;
-    float StoreDistance[V];
+    data_t *StoreDistance = (data_t *)calloc(V, sizeof(data_t));
     int i, j, n;
     int source = index - 1;
 
@@ -229,8 +229,8 @@ void BellmanFord(struct Graph *graph, int index)
             }
         }
     }
-    PrintDistance(StoreDistance, V, source);
 
+    *distance = StoreDistance;
     return;
 }
 
@@ -416,10 +416,10 @@ int main()
     }
 
     // find closest NMINV vertex for all keypoints
-    int min_id, last_min_id;
-
-    data_t min_d, d, last_min;
     int *nearest_vt = (int *)malloc(Kp * NMINV * sizeof(int));
+    { // begin scope
+    int min_id, last_min_id;
+    data_t min_d, d, last_min;
 
     // Ugly loops: looping through all keypoint NMINV times
     // Complexity: O(Ve*Kp*NMINV)
@@ -428,7 +428,7 @@ int main()
         last_min = -1;
         for (int k = 0; k < NMINV; k++)
         {
-            min_d = 99999;
+            min_d = INT_MAX;
             min_id = -1;
             for (int j = 0; j < Ve; j++)
             {
@@ -443,6 +443,7 @@ int main()
             last_min = min_d;
         }
     }
+    } //end scope
 
     printf("\nClosest vertex id:\n");
     for (int i = 0; i < Kp; i++)
@@ -467,13 +468,52 @@ int main()
     printGraph(graph);
     printf("\n");
 
-    BellmanFord(graph, 6);
-
     // For each keypoint, run Bellman-Ford
     // Complexity: O(|E|*|K|*|V|)
-    // data_t* test_dist;
-    // BellmanFord(graph, 2, &test_dist);
-    // PrintDistance(test_dist, Ve+Kp);
+    // Keypoint id = [Ve, Ve+Kp)
+    data_t* dist_array;
+    data_t* vk_shortest_dist = (data_t *)calloc(Ve*Kp, sizeof(data_t)); // Ve-by-Kp array
+    for (int k=Ve; k<Ve+Kp; k++){
+        BellmanFord(graph, k+1, &dist_array); // id starts from 1
+        PrintDistance(dist_array, Ve+Kp, k+1);
+        for(int v=0; v<Ve;v++){
+            vk_shortest_dist[v*Kp + k-Ve] = dist_array[v]; // copy result into array (alt.: use ptr)
+        }
+    }
+
+    printf("\nClosest Dist. from Vt to Kp\n");
+    for(int i=0; i<Ve; i++){
+        printf("Vt %d: ", i);
+        for(int j=0; j<Kp; j++){
+            printf("%f ",vk_shortest_dist[i*Kp + j]);
+        }
+        printf("\n");
+    }
+
+    // Find closest Kp for all Vt
+    int *nearest_kp = (int *)malloc(Ve * sizeof(int));
+    {//begin scope
+    data_t min_d, d;
+    int min_id;
+    for(int i=0; i<Ve; i++){
+        min_d = INT_MAX;
+        min_id=0;
+        for(int j=0; j<Kp; j++){
+            d = vk_shortest_dist[i*Kp + j];
+            if (d < min_d){
+                min_d = d;
+                min_id = j;
+            }
+        }
+        nearest_kp[i] = min_id;
+    }
+    }// end scope
+
+    printf("\nClosest Kp id:\n");
+    for (int i = 0; i < Ve; i++)
+    {
+        printf("Vt %d: %d \n", i, nearest_kp[i]);
+    }
 
     // Clean-up
     free(verts);
@@ -482,6 +522,8 @@ int main()
     free(keypoints);
     free(kv_distances);
     free(keypoint_types);
+    free(vk_shortest_dist);
+    free(nearest_kp);
 
     return 0;
 }
