@@ -182,7 +182,7 @@ void PrintDistance(data_t dist[], int n, int source)
     }
 }
 
-void BellmanFord(struct Graph *graph, int index, data_t** distance)
+void BellmanFord(struct Graph *graph, int index, data_t **distance)
 {
     int V = graph->Ve;
     int to;
@@ -287,6 +287,36 @@ void getKVDistance(data_t *kp_array, data_t *v_array, int N_kp, int N_v, data_t 
         }
     }
     *res = data;
+}
+
+void faces_kp(int *face_nearest_kp, int *faces, int *nearest_kp, int F)
+{
+    int i;
+    int k = 0;
+    int keyIndex1, keyIndex2, keyIndex3 = 0;
+    for (i = 0; i < F; i++)
+    {
+        keyIndex1 = nearest_kp[faces[k] - 1];
+        keyIndex2 = nearest_kp[faces[k + 1] - 1];
+        keyIndex3 = nearest_kp[faces[k + 2] - 1];
+        if (keyIndex1 == keyIndex2)
+        {
+            face_nearest_kp[i] = keyIndex1;
+        }
+        else if (keyIndex1 == keyIndex3)
+        {
+            face_nearest_kp[i] = keyIndex1;
+        }
+        else if (keyIndex2 == keyIndex3)
+        {
+            face_nearest_kp[i] = keyIndex2;
+        }
+        else
+        {
+            face_nearest_kp[i] = keyIndex1;
+        }
+        k += 3;
+    }
 }
 
 int main()
@@ -418,32 +448,32 @@ int main()
     // find closest NMINV vertex for all keypoints
     int *nearest_vt = (int *)malloc(Kp * NMINV * sizeof(int));
     { // begin scope
-    int min_id, last_min_id;
-    data_t min_d, d, last_min;
+        int min_id, last_min_id;
+        data_t min_d, d, last_min;
 
-    // Ugly loops: looping through all keypoint NMINV times
-    // Complexity: O(Ve*Kp*NMINV)
-    for (int i = 0; i < Kp; i++)
-    {
-        last_min = -1;
-        for (int k = 0; k < NMINV; k++)
+        // Ugly loops: looping through all keypoint NMINV times
+        // Complexity: O(Ve*Kp*NMINV)
+        for (int i = 0; i < Kp; i++)
         {
-            min_d = INT_MAX;
-            min_id = -1;
-            for (int j = 0; j < Ve; j++)
+            last_min = -1;
+            for (int k = 0; k < NMINV; k++)
             {
-                d = kv_distances[i * (Ve) + j];
-                if (min_d > d && last_min < d)
+                min_d = INT_MAX;
+                min_id = -1;
+                for (int j = 0; j < Ve; j++)
                 {
-                    min_id = j;
-                    min_d = d;
+                    d = kv_distances[i * (Ve) + j];
+                    if (min_d > d && last_min < d)
+                    {
+                        min_id = j;
+                        min_d = d;
+                    }
                 }
+                nearest_vt[i * NMINV + k] = min_id;
+                last_min = min_d;
             }
-            nearest_vt[i * NMINV + k] = min_id;
-            last_min = min_d;
         }
-    }
-    } //end scope
+    } // end scope
 
     printf("\nClosest vertex id:\n");
     for (int i = 0; i < Kp; i++)
@@ -471,48 +501,63 @@ int main()
     // For each keypoint, run Bellman-Ford
     // Complexity: O(|E|*|K|*|V|)
     // Keypoint id = [Ve, Ve+Kp)
-    data_t* dist_array;
-    data_t* vk_shortest_dist = (data_t *)calloc(Ve*Kp, sizeof(data_t)); // Ve-by-Kp array
-    for (int k=Ve; k<Ve+Kp; k++){
-        BellmanFord(graph, k+1, &dist_array); // id starts from 1
-        PrintDistance(dist_array, Ve+Kp, k+1);
-        for(int v=0; v<Ve;v++){
-            vk_shortest_dist[v*Kp + k-Ve] = dist_array[v]; // copy result into array (alt.: use ptr)
+    data_t *dist_array;
+    data_t *vk_shortest_dist = (data_t *)calloc(Ve * Kp, sizeof(data_t)); // Ve-by-Kp array
+    for (int k = Ve; k < Ve + Kp; k++)
+    {
+        BellmanFord(graph, k + 1, &dist_array); // id starts from 1
+        // PrintDistance(dist_array, Ve+Kp, k+1);
+        for (int v = 0; v < Ve; v++)
+        {
+            vk_shortest_dist[v * Kp + k - Ve] = dist_array[v]; // copy result into array (alt.: use ptr)
         }
     }
 
     printf("\nClosest Dist. from Vt to Kp\n");
-    for(int i=0; i<Ve; i++){
+    for (int i = 0; i < Ve; i++)
+    {
         printf("Vt %d: ", i);
-        for(int j=0; j<Kp; j++){
-            printf("%f ",vk_shortest_dist[i*Kp + j]);
+        for (int j = 0; j < Kp; j++)
+        {
+            printf("%f ", vk_shortest_dist[i * Kp + j]);
         }
         printf("\n");
     }
 
     // Find closest Kp for all Vt
     int *nearest_kp = (int *)malloc(Ve * sizeof(int));
-    {//begin scope
-    data_t min_d, d;
-    int min_id;
-    for(int i=0; i<Ve; i++){
-        min_d = INT_MAX;
-        min_id=0;
-        for(int j=0; j<Kp; j++){
-            d = vk_shortest_dist[i*Kp + j];
-            if (d < min_d){
-                min_d = d;
-                min_id = j;
+    { // begin scope
+        data_t min_d, d;
+        int min_id;
+        for (int i = 0; i < Ve; i++)
+        {
+            min_d = INT_MAX;
+            min_id = 0;
+            for (int j = 0; j < Kp; j++)
+            {
+                d = vk_shortest_dist[i * Kp + j];
+                if (d < min_d)
+                {
+                    min_d = d;
+                    min_id = j;
+                }
             }
+            nearest_kp[i] = min_id;
         }
-        nearest_kp[i] = min_id;
-    }
-    }// end scope
+    } // end scope
 
     printf("\nClosest Kp id:\n");
+
     for (int i = 0; i < Ve; i++)
     {
         printf("Vt %d: %d \n", i, nearest_kp[i]);
+    }
+
+    int *face_nearest_kp = (int *)malloc(F * sizeof(int));
+    faces_kp(face_nearest_kp, faces, nearest_kp, F);
+    for (int i = 0; i < F; i++)
+    {
+        printf("The shortest keypoint from face %d is: %d \n", i, face_nearest_kp[i]);
     }
 
     // Clean-up
@@ -524,6 +569,7 @@ int main()
     free(keypoint_types);
     free(vk_shortest_dist);
     free(nearest_kp);
+    free(face_nearest_kp);
 
     return 0;
 }
