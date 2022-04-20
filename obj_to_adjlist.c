@@ -26,9 +26,10 @@ struct AdjListNode
 };
 
 // A structure to represent an adjacency list
-// the AdjList only consist of the head
+// the AdjList consists of the head, and a nodeCount of how many nodes (vertices) are in this list
 struct AdjList
 {
+    int nodeCount;
     struct AdjListNode *head;
 };
 
@@ -58,10 +59,11 @@ struct Graph *createGraph(int Ve)
     // Create an array of adjacency lists.  Size of array will be Ve
     graph->array = (struct AdjList *)malloc(Ve * sizeof(struct AdjList));
 
-    // Initialize each adjacency list as empty by making head as NULL
+    // Initialize each adjacency list as empty by making head as NULL and nodeCount as 0
     int i;
     for (i = 0; i < Ve; ++i)
     {
+        graph->array[i].nodeCount = 0;
         graph->array[i].head = NULL;
     }
 
@@ -98,6 +100,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
     if (graph->array[src].head == NULL)
     {
         graph->array[src].head = newNode;
+        graph->array[src].nodeCount += 1;
     }
     else
     {
@@ -113,6 +116,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
         if (!dupe && (check->dest != dest))
         {
             check->next = newNode;
+            graph->array[src].nodeCount += 1;
         }
     }
 
@@ -122,6 +126,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
     if (graph->array[dest].head == NULL)
     {
         graph->array[dest].head = newNode;
+        graph->array[dest].nodeCount += 1;
     }
     else
     {
@@ -137,6 +142,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
         if (!dupe && (check->dest != src))
         {
             check->next = newNode;
+            graph->array[dest].nodeCount += 1;
         }
     }
 }
@@ -319,6 +325,31 @@ void faces_kp(int *face_nearest_kp, int *faces, int *nearest_kp, int F)
     }
 }
 
+// Prints the number of nodes attached to each node (i.e., vertices attached to each vertex)
+void print_node_counts(struct Graph *graph) {
+    int *nodesCount = (int *)malloc(100*sizeof(int));
+    int v, c;
+
+    // Init nodesCount to all 0s
+    for (int n = 0; n < 100; n++) {
+        nodesCount[n] = 0;
+    }
+
+    // Pull all counts from graph
+    for (v = 0; v < graph->Ve; ++v)
+    {
+        c = graph->array[v].nodeCount;
+        nodesCount[c] += 1;
+    }
+
+    // Print all counts
+    for (int n=0; n<100 ; n++) {
+        if (nodesCount[n] > 0) {
+            printf("\nNode count %d, number of nodes: %d\n", n, nodesCount[n]);
+        }
+    }
+}
+
 int main()
 {
     FILE *fp;
@@ -328,8 +359,8 @@ int main()
     int Ve = 0, F = 0, j = 0, k = 0, ret;
     char discard;
 
-    fp = fopen("pyramid.obj", "r");
-    // fp = fopen("child_cam_frame.obj", "r");
+    // fp = fopen("pyramid.obj", "r");
+    fp = fopen("child_cam_frame.obj", "r");
     if (fp == NULL)
         printf("ERROR\n");
 
@@ -375,8 +406,6 @@ int main()
             k += 3;
         }
     }
-
-    int *matrix_edge = (int *)malloc(Ve * Ve * sizeof(int));
 
     // Load Keypoints
     data_t *keypoints;
@@ -429,6 +458,9 @@ int main()
     // Print adjacency list
     printGraph(graph);
     printf("\n");
+
+    // Print node counts
+    // print_node_counts(graph);
 
     // Calculate Keypoint-vertex distance
     data_t *kv_distances;

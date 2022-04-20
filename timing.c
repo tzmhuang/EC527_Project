@@ -28,9 +28,10 @@ struct AdjListNode
 };
 
 // A structure to represent an adjacency list
-// the AdjList only consist of the head
+// the AdjList consists of the head, and a nodeCount of how many nodes (vertices) are in this list
 struct AdjList
 {
+    int nodeCount;
     struct AdjListNode *head;
 };
 
@@ -64,6 +65,7 @@ struct Graph *createGraph(int Ve)
     int i;
     for (i = 0; i < Ve; ++i)
     {
+        graph->array[i].nodeCount = 0;
         graph->array[i].head = NULL;
     }
 
@@ -128,6 +130,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
     if (graph->array[src].head == NULL)
     {
         graph->array[src].head = newNode;
+        graph->array[src].nodeCount += 1;
     }
     else
     {
@@ -143,6 +146,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
         if (!dupe && (check->dest != dest))
         {
             check->next = newNode;
+            graph->array[src].nodeCount += 1;
         }
     }
 
@@ -152,6 +156,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
     if (graph->array[dest].head == NULL)
     {
         graph->array[dest].head = newNode;
+        graph->array[dest].nodeCount += 1;
     }
     else
     {
@@ -167,6 +172,7 @@ void addEdge(struct Graph *graph, int src, int dest, data_t dist)
         if (!dupe && (check->dest != src))
         {
             check->next = newNode;
+            graph->array[dest].nodeCount += 1;
         }
     }
 }
@@ -344,6 +350,30 @@ void faces_kp(int *face_nearest_kp, int *faces, int *nearest_kp, int F){
     }
 }
 
+// Prints the number of nodes attached to each node (i.e., vertices attached to each vertex)
+void print_node_counts(struct Graph *graph) {
+    int *nodesCount = (int *)malloc(100*sizeof(int));
+    int v, c;
+
+    // Init nodesCount to all 0s
+    for (int n = 0; n < 100; n++) {
+        nodesCount[n] = 0;
+    }
+
+    // Pull all counts from graph
+    for (v = 0; v < graph->Ve; ++v)
+    {
+        c = graph->array[v].nodeCount;
+        nodesCount[c] += 1;
+    }
+
+    // Print all counts
+    for (int n=0; n<100 ; n++) {
+        if (nodesCount[n] > 0) {
+            printf("\nNode count %d, number of nodes: %d\n", n, nodesCount[n]);
+        }
+    }
+}
 
 int main()
 {
@@ -572,6 +602,9 @@ int main()
 
     // printGraph(graph);
     printf("\n");
+
+    // Print node counts
+    // print_node_counts(graph);
 
     /***********************************************************************************************
     Step6: Run Bellman-Ford for each keypoint
