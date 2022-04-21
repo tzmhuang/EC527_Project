@@ -41,7 +41,7 @@ Final write-up submitted (incorporating feed-back from presentations)
 
 `mesh_keypoint_plot_v2.m` : Matlab script to import the child OBJ file and plot it along with the 6 keypoints (see animated example of the output below).
 
-`model.mtl` : File with colors specified; required to visualzae final obj output file.   
+`model.mtl` : File with colors specified; required to visualize final obj output file.   
 
 `obj_to_adjlist.c` : Imports the obj file and builds the adjacency list with distance values; distance values represent distances along edges to adjacent vertices.
 
