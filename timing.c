@@ -375,6 +375,50 @@ void print_node_counts(struct Graph *graph) {
     }
 }
 
+void output_obj(data_t *verts, int *face_nearest_kp, int *faces, int Ve, int F) {
+    char *filename = "segmented_child.obj";
+    char seg_color[6][10] = {
+                         "Blue",    // head
+                         "Red",     // torso
+                         "Green",   // right arm
+                         "Orange",  // left arm
+                         "Purple",  // right leg
+                         "Yellow"   // left leg
+                     };
+
+    // open the file for writing
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL)
+    {
+        printf("Error opening the file %s", filename);
+    }
+
+    // Write headers
+    fprintf(fp, "mtllib model.mtl\no segmented_child_mesh\n");
+    
+    // Write vertices
+    int j = 0;
+    for (int i = 0; i < Ve; i++) {
+        fprintf(fp, "v %f %f %f\n", verts[j], verts[j+1], verts[j+2]);
+        j+=3;
+    }
+
+    // Write faces
+    int currface = -1;
+    j = 0;
+    for (int i = 0; i < F; i++) {
+        if (face_nearest_kp[i] != currface) {
+            fprintf(fp, "usemtl %s\n", seg_color[(face_nearest_kp[i])]);
+            currface = face_nearest_kp[i];    
+        }
+        fprintf(fp, "f %d %d %d\n", faces[j], faces[j+1], faces[j+2]);
+        j+=3;
+    }
+
+    // close the file
+    fclose(fp);
+}
+
 int main()
 {
     FILE *fp;
@@ -392,8 +436,8 @@ int main()
     */
 
     clock_gettime(CLOCK_REALTIME, &time_start);
+    // fp = fopen("pyramid.obj", "r");
     fp = fopen("child_cam_frame.obj", "r");
-    // fp = fopen("child_cam_frame.obj", "r");
     if (fp == NULL)
         printf("ERROR\n");
 
@@ -690,6 +734,8 @@ int main()
     elapse_time = interval(time_start, time_stop);
     printf("\nTime for Find closest Kp for all Faces: %f(msec)\n", (float)(elapse_time));
 
+    // Output the updated obj file
+    output_obj(verts, face_nearest_kp, faces, Ve, F);
 
     // Clean-up
     free(verts);
