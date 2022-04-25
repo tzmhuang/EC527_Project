@@ -1,0 +1,25 @@
+Ve: 4976, F: 10242
+
+Time for loading the vertices and faces: 18.026899(msec)
+
+Time for loading the keypoints: 1.372600(msec)
+
+
+Time for adding edges to graph: 2.521200(msec)
+
+Time for calculating distance from keypoints to vertexs: 0.067100(msec)
+
+Time for adding n closet vertexs to its keypoint to graph: 0.014300(msec)
+
+
+Time for Bellman-Ford for each keypoint: 3754.031494(msec)
+
+Time for MODIFIED Bellman-Ford (4-way) for each keypoint: 2428.927979(msec)
+
+Time for Find closest Kp for all Vts: 0.045100(msec)
+
+Time for Find closest Kp for all Vts in MODIFIED B-F: 0.043900(msec)
+
+Time for Find closest Kp for all Faces: 0.028800(msec)
+
+Time for Find closest Kp for all Faces in MODIFIED B-F: 0.021700(msec)
