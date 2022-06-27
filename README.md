@@ -1,36 +1,31 @@
-# EC527_Project
+# EC527: High Performance Programming with Multicore and GPUs Project
 
-## Important Dates  
+Our overall goal is to divide a whole human body by several given key points illustrating the main part of the body, such as head, torso, arms, legs and so on. This segment function can be prepared for future use such as training the network. Upon confirming the segment, we use different colors to differentiate the body part, and output them in another obj file. Our pipeline consists of the following parts:
 
-### During the week of 4/19-4/22  
-Second meeting with instructor. By this time you should understand your problem thoroughly, have updated your serial code, and started work on your parallel and GPU versions (if you are doing them).  
-***DELIVERABLE:** You should prepare an informal document (slides are fine) that describe the architectures you are supporting and plans for partitioning.*    
+1. Loading data: loading faces and vertices from mesh file
+2. Graph building: build the adjacency list which is used to save the distance between each vertex
+3. Bellman-Ford to calculate the shortest path from each keypoint to all the other vertices
+4. Generating segmented mesh from result
 
-### During the week of 4/25-4/19  
-Meetings with instructor to check progress/problems.  
+We optimized the step 2 and step 3 by using 1) loop transformation , 2) CPU multithreading ,3) GPU CUDA, and we compared the results. The results we get from the best optimization are shown in a table below.
 
-### Presentation (be ready by Monday 5/2)
-A full presentation (8-15 minutes, depending on the size of the group) describing the bulk of the work. There are two presentation days, 5/2 & 5/4. You should be prepared to go on either of the days.  
-***DELIVERABLE:** Slides due by 16:00 on **5/1**.*  
-<details>
-  <summary>Presentation Guidelines</summary>
-  
-  The talk should be high quality and well-prepared. It’s OK if you haven’t completely finished, but you should be substantially done. Giving an 8-15 minute presentation on a problem that most of the audience is not familiar with is challenging and will take real work to make coherent. Larger groups get more time. In any 
-case, your talk should include (most of) the following:
-* Description of the problem
-* What the serial code/algorithm looks like. What is the algorithm? What is the complexity?
-* Where does the time go? What is the arithmetic intensity? 
-* What are the primary data structures? What is the memory reference pattern?
-* Have you modified the algorithm to run in parallel (or which parallel algorithm you selected if there is a choice)?
-* For the parallel (and GPU) parts, how were the data and computations partitioned?
-* Overview of your optimized codes. What are the optimizations? What problems did you have? 
-* Experiments and results. What worked?
-* A couple minutes for some brief Q&A
-  </details>
- 
-### Report due Tuesday 5/10 @ Noon  
-Final write-up submitted (incorporating feed-back from presentations)
 
+## Results
+
+| Task                                                                              | Timing Before | Timing Optimized |
+| --------------------------------------------------------------------------------- | ------------- | ---------------- |
+| Loading data                                                                      | 18.77         | 18.77            |
+| **Generate adjacency list graph (link verts and calc edge distances)**            | 2.89          | 0.89             |
+| **Bellman-Ford calculate shortest path from each keypoint to all other vertices** | 3753.64       | 150.15           |
+| Generating segmentation from result                                               | 0.07          | 0.07             |
+| Total Time                                                                        | 3775.37       | 169.88           |
+
+## Visualizations
+
+### Child OBJ and Keypoints Plotted in Matlab (LOW QUALITY)
+Matlab exports cause the jumpiness in the animation.  
+
+![animated_mesh_kp_lowqual.gif](animated_mesh_kp_lowqual.gif)
 
 ## Files  
 `child_cam_frame.obj` : **Updated 4/20/22 to make mesh watertight** Mesh file for a small child (~5K vertices).
@@ -50,11 +45,3 @@ Final write-up submitted (incorporating feed-back from presentations)
 `pyramid.obj` : Simple mesh file for a tetrahedron (4 total vertices) for development and testing.
 
 `readObj.m` : Matlab script to import OBJ files.
-
-
-## Visualizations
-
-### Child OBJ and Keypoints Plotted in Matlab (LOW QUALITY)
-Matlab exports cause the jumpiness in the animation.  
-
-![animated_mesh_kp_lowqual.gif](animated_mesh_kp_lowqual.gif)
